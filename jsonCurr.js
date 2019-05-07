@@ -11,7 +11,6 @@ fs.readdirSync("img").forEach(file => {
 for(let i=0;i<fileList.length;i++){
     json += `{
     "filename":"${fileList[i]}",
-      "source":"",
       "game":"",
       "year":""
   }
