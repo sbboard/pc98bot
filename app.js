@@ -66,7 +66,7 @@ else{
     setInterval(function(){
     upload_random_image(images);
     }, 
-    6*60*60*1000);
+    5*60*60*1000);
     //2*1000);
 }
 });
