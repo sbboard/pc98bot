@@ -51,8 +51,9 @@ function tweet(folder, image){
     image_path = path.join(__dirname, admin.imgDir + folder + "/" + image)
     b64content = fs.readFileSync(image_path, { encoding: 'base64' });
 
-    if(folder == "unknown"){
-      msg = "PC-98 game name unknown. If you know the name of this game, please leave a reply!"
+    if(folder == "_unknown"){
+      msg = `unknown // PC-98
+If you know the name of this software, please leave a reply!`
     }
     else{
       msg = `${folder} // PC-98`
