@@ -6,7 +6,7 @@ var fs = require('fs'),
     config = require(path.join(__dirname, 'config.js'));
 
 let admin = {
-  time: 5*60*60*1000,
+  time: 4*60*60*1000,
   imgDir: '/img/'
 }
 
