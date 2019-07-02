@@ -53,10 +53,11 @@ function tweet(folder, image){
 
     if(folder == "_unknown"){
       msg = `unknown // PC-98
-If you know the name of this software, please leave a reply!`
+If you know the name of this software, please leave a reply!
+あなたがこのソフトウェアの名前を知っているならば、答えを残してください`
     }
     else{
-      msg = `${folder} // PC-98`
+      msg = `${folder} // PC-98 // #pc98 #pc9801`
     }
     console.log('Uploading image...');
 
