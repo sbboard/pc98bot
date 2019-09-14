@@ -6,9 +6,23 @@ var fs = require('fs'),
     config = require(path.join(__dirname, 'config.js'));
 
 let admin = {
-  time: 4*60*60*1000,
+  hour: 4,
+  time: hour*60*60*1000,
   imgDir: '/img/'
 }
+
+let fileCount = 0
+let postsPerDay = 24 / admin.hour
+
+//get how many images are left
+fs.readdir(__dirname + admin.imgDir, (err, files) => {
+  let folderAmt = files.length
+  for(let v=0;v<folderAmt;v++){
+    fs.readdir(__dirname + admin.imgDir + files[v], (err, filesTwo) => {
+        fileCount += (filesTwo.length)
+      });
+  }
+});
 
 var T = new Twit(config);
 
@@ -124,8 +138,13 @@ async function runScript(){
   let folderName = await getFolder()
   let imgObj = await getImage(folderName)
   let filepath = await tweet(folderName, imgObj.imgName)
+  let daysLeft = 0 
+  fileCount = fileCount-1
+  daysLeft = fileCount / postsPerDay
+  console.log((daysLeft/365).toFixed(2) + " years left (" + daysLeft.toFixed(2) + " days)")
   await deleteImg(filepath)
   await deleteFolder(imgObj.imgLength, folderName)
+
 }
 
 //Initiate
