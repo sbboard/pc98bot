@@ -5,14 +5,15 @@ var fs = require('fs'),
     Twit = require('twit'),
     config = require(path.join(__dirname, 'config.js'));
 
+const hour = 4
+
 let admin = {
-  hour: 4,
   time: hour*60*60*1000,
   imgDir: '/img/'
 }
 
 let fileCount = 0
-let postsPerDay = 24 / admin.hour
+let postsPerDay = 24 / hour
 
 //get how many images are left
 fs.readdir(__dirname + admin.imgDir, (err, files) => {
@@ -144,7 +145,6 @@ async function runScript(){
   console.log((daysLeft/365).toFixed(2) + " years left (" + daysLeft.toFixed(2) + " days)")
   await deleteImg(filepath)
   await deleteFolder(imgObj.imgLength, folderName)
-
 }
 
 //Initiate
