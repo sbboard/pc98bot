@@ -76,7 +76,7 @@ If you know the name of this software, please leave a reply!
       if(folder.includes(admin.hashtagNotifier)){
         let gameName = folder.split('###')[0]
         let company = folder.split('###')[1]
-        msg = `${gameName} // ${company} // PC-98 // #pc98 #${company}`
+        msg = `${gameName} // ${company} // PC-98 // #pc98 #${company.replace(/[^a-zA-Z]/g, "")}`
       }
       else{
         msg = `${folder} // PC-98 // #pc98`
