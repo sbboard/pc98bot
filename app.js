@@ -5,11 +5,12 @@ var fs = require('fs'),
     Twit = require('twit'),
     config = require(path.join(__dirname, 'config.js'));
 
-const hour = 4
+const hour = .01
 
 let admin = {
   time: hour*60*60*1000,
-  imgDir: '/img/'
+  imgDir: '/img/',
+  hashtagNotifier: '###'
 }
 
 let fileCount = 0
@@ -72,7 +73,14 @@ If you know the name of this software, please leave a reply!
 あなたがこのソフトウェアの名前を知っているならば、答えを残してください`
     }
     else{
-      msg = `${folder} // PC-98 // #pc98 #pc9801`
+      if(folder.includes(admin.hashtagNotifier)){
+        let gameName = folder.split('###')[0]
+        let company = folder.split('###')[1]
+        msg = `${gameName} // ${company} // PC-98 // #pc98 #${company}`
+      }
+      else{
+        msg = `${folder} // PC-98 // #pc98`
+      }
     }
     console.log('Uploading image...');
 
