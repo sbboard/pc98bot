@@ -5,7 +5,7 @@ var fs = require('fs'),
     Twit = require('twit'),
     config = require(path.join(__dirname, 'config.js'));
 
-const hour = .01
+const hour = 4
 
 let admin = {
   time: hour*60*60*1000,
