@@ -6,9 +6,9 @@ var fs = require('fs'),
     config = require(path.join(__dirname, 'config.js'));
 
 const hour = 4
+const minute = 0
 
 let admin = {
-  time: hour*60*60*1000,
   imgDir: '/img/',
   hashtagNotifier: '###'
 }
@@ -144,18 +144,23 @@ function deleteFolder(imgLength, folder){
 }
 
 async function runScript(){
-  let folderName = await getFolder()
-  let imgObj = await getImage(folderName)
-  let filepath = await tweet(folderName, imgObj.imgName)
-  let daysLeft = 0 
-  fileCount = fileCount-1
-  daysLeft = fileCount / postsPerDay
-  console.log((daysLeft/365).toFixed(2) + " years left (" + daysLeft.toFixed(2) + " days)")
-  await deleteImg(filepath)
-  await deleteFolder(imgObj.imgLength, folderName)
+  var time = new Date()
+  var h = time.getHours()
+  var m = time.getMinutes()
+  if(h%hour==0&&m==minute){
+    let folderName = await getFolder()
+    let imgObj = await getImage(folderName)
+    let filepath = await tweet(folderName, imgObj.imgName)
+    let daysLeft = 0 
+    fileCount = fileCount-1
+    daysLeft = fileCount / postsPerDay
+    console.log((daysLeft/365).toFixed(2) + " years left (" + daysLeft.toFixed(2) + " days)")
+    await deleteImg(filepath)
+    await deleteFolder(imgObj.imgLength, folderName)
+  }
 }
 
-//Initiate
+//Initiate (runs every minute)
 setInterval(function(){
   runScript()
-}, admin.time);
+}, 60000);
