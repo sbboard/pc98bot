@@ -147,9 +147,7 @@ async function runScript(){
   var time = new Date()
   var h = time.getHours()
   var m = time.getMinutes()
-  console.log("script run")
   if(h%hour==0&&parseInt(m)==minute){
-    console.log(`triggered: ${h}:${m}`)
     let folderName = await getFolder()
     let imgObj = await getImage(folderName)
     let filepath = await tweet(folderName, imgObj.imgName)
@@ -159,9 +157,6 @@ async function runScript(){
     console.log((daysLeft/365).toFixed(2) + " years left (" + daysLeft.toFixed(2) + " days)")
     await deleteImg(filepath)
     await deleteFolder(imgObj.imgLength, folderName)
-  }
-  else{
-    console.log(`NOT triggered: ${h}:${m}`)
   }
 }
 
