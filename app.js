@@ -1,32 +1,33 @@
 var Twit = require('twit')
-
 var fs = require('fs'),
     path = require('path'),
     Twit = require('twit'),
     config = require(path.join(__dirname, 'config.js'));
+var T = new Twit(config);
 
 const hour = 4
 const minute = 0
+let counter = 0
+const retweetEvery = -1
+let postsPerDay = 24 / hour
 
 let admin = {
   imgDir: '/img/',
-  hashtagNotifier: '###'
+  hashtagNotifier: '###',
+  debug: true
 }
 
-let fileCount = 0
-let postsPerDay = 24 / hour
-
 //get how many images are left
-fs.readdir(__dirname + admin.imgDir, (err, files) => {
-  let folderAmt = files.length
-  for(let v=0;v<folderAmt;v++){
-    fs.readdir(__dirname + admin.imgDir + files[v], (err, filesTwo) => {
-        fileCount += (filesTwo.length)
-      });
-  }
-});
-
-var T = new Twit(config);
+async function getCount(){
+  let promise = new Promise(resolve => {
+    fs.readdir(__dirname + admin.imgDir, (err, files) => {
+      let folderAmt = files.length
+      resolve(folderAmt)
+    })
+  })
+  let result = await promise
+  return result
+}
 
 //get folder
 function getFolder(){
@@ -147,20 +148,36 @@ async function runScript(){
   var time = new Date()
   var h = time.getHours()
   var m = time.getMinutes()
-  if(h%hour==0&&parseInt(m)==minute){
-    let folderName = await getFolder()
-    let imgObj = await getImage(folderName)
-    let filepath = await tweet(folderName, imgObj.imgName)
-    let daysLeft = 0 
-    fileCount = fileCount-1
-    daysLeft = fileCount / postsPerDay
-    console.log((daysLeft/365).toFixed(2) + " years left (" + daysLeft.toFixed(2) + " days)")
-    await deleteImg(filepath)
-    await deleteFolder(imgObj.imgLength, folderName)
+  if((h%hour==0&&parseInt(m)==minute)||admin.debug == true){
+    let theCount = getCount()
+    theCount.then(async function(numOfGames) {
+    if(numOfGames > 0 && counter <= retweetEvery){
+      let folderName = await getFolder()
+      let imgObj = await getImage(folderName)
+      let filepath = await tweet(folderName, imgObj.imgName)
+      await deleteImg(filepath)
+      await deleteFolder(imgObj.imgLength, folderName)
+      counter++
+      console.log(counter)
+    }
+    else{
+      console.log("retweet")
+      counter = 0
+    }
+  })
   }
 }
 
 //Initiate (runs every minute)
-setInterval(function(){
-  runScript()
-}, 60000);
+if(admin.debug == true){
+  setInterval(function(){
+    runScript()
+  }, 10000);
+  console.log("admin mode on")
+}
+else{
+  setInterval(function(){
+    runScript()
+  }, 60000);
+  console.log("normal mode on")
+}
