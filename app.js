@@ -8,13 +8,12 @@ var T = new Twit(config);
 const hour = 4
 const minute = 0
 let counter = 0
-const retweetEvery = -1
-let postsPerDay = 24 / hour
+const retweetEvery = 4
 
 let admin = {
   imgDir: '/img/',
   hashtagNotifier: '###',
-  debug: true
+  debug: false
 }
 
 //get how many images are left
@@ -144,6 +143,34 @@ function deleteFolder(imgLength, folder){
   })
 }
 
+//retweet old post
+function retweet(){
+  var params = {
+      q: 'from:PC98_bot #pc98',
+      result_type: 'mixed',
+      count: 100,
+  }
+  T.get('search/tweets', params, function (err, data) {
+      if (!err) {
+              var retweetId = data.statuses[data.statuses.length-1].id_str;
+              T.post('statuses/retweet/:id', {
+                  id: retweetId
+              }, function (err, response) {
+                  if (response) {
+                      console.log('Retweeted!!!');
+                  }
+                  if (err) {
+                        console.log(err);
+                      console.log('Problem when retweeting. Possibly already retweeted this tweet!');
+                  }
+              });
+      }
+      else {
+          console.log('Error during tweet search call');
+      }
+  });
+}
+
 async function runScript(){
   var time = new Date()
   var h = time.getHours()
@@ -151,7 +178,7 @@ async function runScript(){
   if((h%hour==0&&parseInt(m)==minute)||admin.debug == true){
     let theCount = getCount()
     theCount.then(async function(numOfGames) {
-    if(numOfGames > 0 && counter <= retweetEvery){
+    if(numOfGames > 0 && counter < retweetEvery){
       let folderName = await getFolder()
       let imgObj = await getImage(folderName)
       let filepath = await tweet(folderName, imgObj.imgName)
@@ -161,14 +188,12 @@ async function runScript(){
       console.log(counter)
     }
     else{
-      console.log("retweet")
-      counter = 0
+      retweet()
     }
   })
   }
 }
 
-//Initiate (runs every minute)
 if(admin.debug == true){
   setInterval(function(){
     runScript()
