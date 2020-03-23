@@ -143,6 +143,17 @@ function deleteFolder(imgLength, folder){
   })
 }
 
+function checkRetweet(tweetData,num){
+  console.log(tweetData)
+  if(tweetData[num].retweeted == true){
+    checkRetweet(data,num-1)
+    console.log("ok")
+  }
+  else{
+    return num
+  }
+}
+
 //retweet old post
 function retweet(){
   var params = {
@@ -152,7 +163,9 @@ function retweet(){
   }
   T.get('search/tweets', params, function (err, data) {
       if (!err) {
-              var retweetId = data.statuses[data.statuses.length-1].id_str;
+              let statusNum = data.statuses.length-1
+              let goodTweet = checkRetweet(data.statuses,statusNum)
+              var retweetId = data.statuses[goodTweet].id_str
               T.post('statuses/retweet/:id', {
                   id: retweetId
               }, function (err, response) {
@@ -160,7 +173,7 @@ function retweet(){
                       console.log('Retweeted!!!');
                   }
                   if (err) {
-                        console.log(err);
+                          console.log(err);
                       console.log('Problem when retweeting. Possibly already retweeted this tweet!');
                   }
               });
@@ -184,11 +197,11 @@ async function runScript(){
       let filepath = await tweet(folderName, imgObj.imgName)
       await deleteImg(filepath)
       await deleteFolder(imgObj.imgLength, folderName)
-      counter++
-      console.log(counter)
+      //counter++
     }
     else{
       retweet()
+      counter = 0
     }
   })
   }
