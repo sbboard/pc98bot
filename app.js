@@ -1,4 +1,5 @@
 var Twit = require('twit')
+let {PythonShell} = require('python-shell')
 var fs = require('fs'),
     path = require('path'),
     Twit = require('twit'),
@@ -198,6 +199,12 @@ async function runScript(){
       await deleteImg(filepath)
       await deleteFolder(imgObj.imgLength, folderName)
       //counter++
+
+      //run retweet script
+      PythonShell.run('oldTweets.py', null, function (err) {
+        if (err) throw err;
+        console.log('old tweet found');
+      });
     }
     else{
       retweet()
