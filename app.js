@@ -9,12 +9,12 @@ var T = new Twit(config);
 const hour = 4
 const minute = 0
 let counter = 0
-const retweetEvery = 4
+const retweetEvery = 5
 
 let admin = {
   imgDir: '/img/',
   hashtagNotifier: '###',
-  debug: false
+  debug: true
 }
 
 //get how many images are left
@@ -143,45 +143,45 @@ function deleteFolder(imgLength, folder){
     }
   })
 }
-
-function checkRetweet(tweetData,num){
-  console.log(tweetData)
-  if(tweetData[num].retweeted == true){
-    checkRetweet(data,num-1)
-    console.log("ok")
-  }
-  else{
-    return num
-  }
+function postRT(RTID){
+    T.post('statuses/retweet/:id', {
+      id: RTID
+    }, function (err, response) {
+      if (response) {
+        console.log("retweeted")
+      }
+      if (err) {
+        if(err.code==327){
+          //untweet
+          T.post('statuses/unretweet/:id', {
+            id: RTID
+          }, function (err, response) {
+            if(response) {
+              console.log("unretweeted")
+              postRT(RTID)
+            }
+            if(err){
+              console.log(err)
+            }
+          })
+          //
+        }
+        else{
+          console.log(err)
+        }
+      }
+  });
 }
 
-//retweet old post
-function retweet(){
-  var params = {
-      q: 'from:PC98_bot #pc98',
-      result_type: 'mixed',
-      count: 100,
-  }
-  T.get('search/tweets', params, function (err, data) {
-      if (!err) {
-              let statusNum = data.statuses.length-1
-              let goodTweet = checkRetweet(data.statuses,statusNum)
-              var retweetId = data.statuses[goodTweet].id_str
-              T.post('statuses/retweet/:id', {
-                  id: retweetId
-              }, function (err, response) {
-                  if (response) {
-                      console.log('Retweeted!!!');
-                  }
-                  if (err) {
-                          console.log(err);
-                      console.log('Problem when retweeting. Possibly already retweeted this tweet!');
-                  }
-              });
-      }
-      else {
-          console.log('Error during tweet search call');
-      }
+async function retweet(){
+  console.log("trig")
+  var obj
+  let randomPost
+  fs.readFile('retweet.json', 'utf8', function (err, data) {
+    if (err) throw err;
+    obj = JSON.parse(data);
+    randomPost = Math.floor(Math.random() * obj.id.length);
+    postRT(obj.id[randomPost])
   });
 }
 
@@ -198,7 +198,7 @@ async function runScript(){
       let filepath = await tweet(folderName, imgObj.imgName)
       await deleteImg(filepath)
       await deleteFolder(imgObj.imgLength, folderName)
-      //counter++
+      counter++
 
       //run retweet script
       PythonShell.run('oldTweets.py', null, function (err) {
@@ -209,6 +209,12 @@ async function runScript(){
     else{
       retweet()
       counter = 0
+
+      //run retweet script
+      PythonShell.run('oldTweets.py', null, function (err) {
+        if (err) throw err;
+        console.log('old tweet found');
+      });
     }
   })
   }
