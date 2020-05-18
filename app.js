@@ -8,13 +8,13 @@ var T = new Twit(config);
 
 const hour = 4
 const minute = 0
-let counter = 0
+let counter = 1
 const retweetEvery = 5
 
 let admin = {
   imgDir: '/img/',
   hashtagNotifier: '###',
-  debug: true
+  debug: false
 }
 
 //get how many images are left
@@ -208,7 +208,7 @@ async function runScript(){
     }
     else{
       retweet()
-      counter = 0
+      counter = 1
 
       //run retweet script
       PythonShell.run('oldTweets.py', null, function (err) {

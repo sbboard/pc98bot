@@ -25,7 +25,7 @@ data['id'] = []
 tweetCriteria = got.manager.TweetCriteria().setQuerySearch('from:pc98_bot #pc98')\
                                            .setSince(dateStrYstrdy)\
                                            .setUntil(dateStr)\
-                                           .setMaxTweets(10)
+                                           .setMaxTweets(100)
 tweet = got.manager.TweetManager.getTweets(tweetCriteria)
 for f in range(len(tweet)):
     data['id'].append(tweet[f].id)
