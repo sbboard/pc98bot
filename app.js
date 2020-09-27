@@ -1,15 +1,18 @@
 var Twit = require('twit')
-let {PythonShell} = require('python-shell')
+//let {PythonShell} = require('python-shell')
 var fs = require('fs'),
     path = require('path'),
     Twit = require('twit'),
     config = require(path.join(__dirname, 'config.js'));
 var T = new Twit(config);
 
+//4 for normal, 1 for hourly
 const hour = 4
 const minute = 0
 let counter = 1
-const retweetEvery = 5
+
+//5 for normal, 999 for... ya
+const retweetEvery = 999
 
 let admin = {
   imgDir: '/img/',
@@ -174,7 +177,6 @@ function postRT(RTID){
 }
 
 async function retweet(){
-  console.log("trig")
   var obj
   let randomPost
   fs.readFile('retweet.json', 'utf8', function (err, data) {
@@ -201,20 +203,20 @@ async function runScript(){
       counter++
 
       //run retweet script
-      PythonShell.run('oldTweets.py', null, function (err) {
-        if (err) throw err;
-        console.log('old tweet found');
-      });
+      // PythonShell.run('oldTweets.py', null, function (err) {
+      //   if (err) throw err;
+      //   console.log('old tweet found');
+      // });
     }
     else{
       retweet()
       counter = 1
 
       //run retweet script
-      PythonShell.run('oldTweets.py', null, function (err) {
-        if (err) throw err;
-        console.log('old tweet found');
-      });
+      // PythonShell.run('oldTweets.py', null, function (err) {
+      //   if (err) throw err;
+      //   console.log('old tweet found');
+      // });
     }
   })
   }
