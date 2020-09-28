@@ -1,18 +1,30 @@
 var Twit = require('twit')
-//let {PythonShell} = require('python-shell')
 var fs = require('fs'),
     path = require('path'),
     Twit = require('twit'),
     config = require(path.join(__dirname, 'config.js'));
 var T = new Twit(config);
+const axios = require('axios');
+
+Date.prototype.addMonths = function(months) {
+  var date = new Date(this.valueOf());
+  date.setMonth(date.getMonth() + months)
+  return date
+}
+
+Date.prototype.addDays = function(days) {
+  var date = new Date(this.valueOf());
+  date.setDate(date.getDate() + days);
+  return date;
+}
 
 //4 for normal, 1 for hourly
 const hour = 4
 const minute = 0
 let counter = 1
 
-//5 for normal, 999 for... ya
-const retweetEvery = 999
+//0 for every time, 5 for normal, 999 for pretty much never
+const retweetEvery = 5
 
 let admin = {
   imgDir: '/img/',
@@ -177,14 +189,43 @@ function postRT(RTID){
 }
 
 async function retweet(){
-  var obj
-  let randomPost
-  fs.readFile('retweet.json', 'utf8', function (err, data) {
-    if (err) throw err;
-    obj = JSON.parse(data);
-    randomPost = Math.floor(Math.random() * obj.id.length);
-    postRT(obj.id[randomPost])
-  });
+  //formats date for twitter URL
+  function formatDate(date) {
+    var d = new Date(date),
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = d.getFullYear();
+  
+    if (month.length < 2) 
+        month = '0' + month;
+    if (day.length < 2) 
+        day = '0' + day;
+  
+    return [year, month, day].join('-');
+  }
+  
+  //randomly selects dates
+  let start = new Date(2019, 6, 3)
+  let today = new Date
+  let sixMonthsAgo = today.addMonths(-6)
+  let randomDate = new Date(start.getTime() + Math.random() * (sixMonthsAgo.getTime() - start.getTime()))
+  let nextDay = (randomDate.addDays(1))
+  
+  //the HTML scraper
+  async function getHTML(uri) {
+    const response = await axios.get(uri);
+    let arrayOfStuff = response.data.split(`data-url="https://twitter.com/PC98_bot/status/`)
+    let blankArray = []
+    let randomIndex
+    for(let i =1;i<arrayOfStuff.length;i++){
+      blankArray.push(arrayOfStuff[i].split("/photo/1")[0])
+    }
+    randomIndex = Math.floor(Math.random() * blankArray.length);
+    console.log(`retweet found: ${blankArray[randomIndex]}`)
+    postRT(blankArray[randomIndex])
+  }
+
+  getHTML(`https://mobile.twitter.com/search?q=(%23pc98)%20(from%3Apc98_bot)%20until%3A${formatDate(nextDay)}%20since%3A${formatDate(randomDate)}&src=typed_query`)
 }
 
 async function runScript(){
@@ -201,22 +242,10 @@ async function runScript(){
       await deleteImg(filepath)
       await deleteFolder(imgObj.imgLength, folderName)
       counter++
-
-      //run retweet script
-      // PythonShell.run('oldTweets.py', null, function (err) {
-      //   if (err) throw err;
-      //   console.log('old tweet found');
-      // });
     }
     else{
       retweet()
       counter = 1
-
-      //run retweet script
-      // PythonShell.run('oldTweets.py', null, function (err) {
-      //   if (err) throw err;
-      //   console.log('old tweet found');
-      // });
     }
   })
   }
