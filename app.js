@@ -29,7 +29,7 @@ const retweetEvery = 5
 let admin = {
   imgDir: '/img/',
   hashtagNotifier: '###',
-  debug: true
+  debug: false
 }
 
 //get how many images are left
