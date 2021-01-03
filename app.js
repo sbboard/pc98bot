@@ -24,7 +24,7 @@ const minute = 0
 let counter = 1
 
 //0 for every time, 5 for normal, 999 for pretty much never
-const retweetEvery = 5
+const retweetEvery = 9999999
 
 let admin = {
   imgDir: '/img/',
