@@ -182,6 +182,9 @@ function postRT(RTID){
           })
           //
         }
+        else if(err.code==144){
+          retweet()
+        }
         else{
           console.log(err)
         }
@@ -231,8 +234,12 @@ async function retweet(){
   //its a magic number but who cares this is a temp fix
   const archiveLength = 4474
   let randomNo = Math.floor(Math.random() * archiveLength);
-
-  postRT(archive[randomNo].tweet.id)
+  if(archive[randomNo].tweet.entities.hashtags.some(item => item.text === 'pc98')){
+    postRT(archive[randomNo].tweet.id)
+  }
+  else{
+    retweet()
+  }
 }
 
 async function runScript(){
