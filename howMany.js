@@ -1,12 +1,23 @@
-const fs = require('fs');
-const dir = '/img/';
-let fileCount = 0
+const fs = require("fs");
+const dir = "/img/";
 
-fs.readdir(__dirname + dir, (err, files) => {
-  let folderAmt = files.length
-  for(let v=0;v<folderAmt;v++){
-    fs.readdir(__dirname + dir+ files[v], (err, filesTwo) => {
-        fileCount += (filesTwo.length)
-      });
-  }
-});
+async function countEm() {
+  let fileCount = 0;
+  fs.promises
+    .readdir(__dirname + dir)
+    .then(async (result) => {
+      for (let filename of result) {
+        images = await fs.promises.readdir(__dirname + dir + filename);
+        fileCount += images.length;
+      }
+    })
+    .finally(() => {
+      let days = fileCount / 5;
+      let years = days / 364.25;
+      console.log("total images:", fileCount);
+      console.log("estimated days left:", days);
+      console.log("estimated years left:", years);
+    });
+}
+
+countEm();
