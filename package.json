@@ -1,7 +1,7 @@
 {
   "name": "pc98",
   "version": "1.0.0",
-  "description": "��#\u0000 \u0000p\u0000c\u00009\u00008\u0000b\u0000o\u0000t\u0000\r\u0000 \u0000",
+  "description": "it's pc-98 bot",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

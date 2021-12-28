@@ -1,4 +1,3 @@
-var Twit = require("twit");
 var fs = require("fs"),
   path = require("path"),
   Twit = require("twit"),
@@ -24,13 +23,13 @@ const hour = 4;
 const minute = 0;
 let counter = 1;
 
-//0 for every time, 5 for normal, 999 for pretty much never
+//0 for every time, 5 for normal
 const retweetEvery = 5;
 
 let admin = {
   imgDir: "/img/",
   hashtagNotifier: "###",
-  debug: true,
+  debug: false,
 };
 
 //get how many images are left
@@ -206,46 +205,7 @@ function postRT(RTID) {
 }
 
 async function retweet() {
-  //formats date for twitter URL
-  // function formatDate(date) {
-  //   var d = new Date(date),
-  //       month = '' + (d.getMonth() + 1),
-  //       day = '' + d.getDate(),
-  //       year = d.getFullYear();
-
-  //   if (month.length < 2)
-  //       month = '0' + month;
-  //   if (day.length < 2)
-  //       day = '0' + day;
-
-  //   return [year, month, day].join('-');
-  // }
-
-  //randomly selects dates
-  // let start = new Date(2019, 6, 3)
-  // let today = new Date
-  // let sixMonthsAgo = today.addMonths(-6)
-  // let randomDate = new Date(start.getTime() + Math.random() * (sixMonthsAgo.getTime() - start.getTime()))
-  // let nextDay = (randomDate.addDays(1))
-
-  //the HTML scraper
-  // async function getHTML(uri) {
-  //   const response = await axios.get(uri);
-  //   let arrayOfStuff = response.data.split(`data-url="https://twitter.com/PC98_bot/status/`)
-  //   let blankArray = []
-  //   let randomIndex
-  //   for(let i =1;i<arrayOfStuff.length;i++){
-  //     blankArray.push(arrayOfStuff[i].split("/photo/1")[0])
-  //   }
-  //   randomIndex = Math.floor(Math.random() * blankArray.length);
-  //   console.log(`retweet found: ${blankArray[randomIndex]}`)
-  //   postRT(blankArray[randomIndex])
-  // }
-
-  // getHTML(`https://mobile.twitter.com/search?q=(%23pc98)%20(from%3Apc98_bot)%20until%3A${formatDate(nextDay)}%20since%3A${formatDate(randomDate)}&src=typed_query`)
-
-  //its a magic number but who cares this is a temp fix
-  const archiveLength = 4474;
+  const archiveLength = archive.length;
   let randomNo = Math.floor(Math.random() * archiveLength);
   if (
     archive[randomNo].tweet.entities.hashtags.some(
