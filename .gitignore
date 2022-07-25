@@ -4,3 +4,4 @@ node_modules
 tempimg
 test.js
 retweet.json
+archive/*
