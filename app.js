@@ -8,7 +8,7 @@ const fs = require("fs"),
   retweetEvery = 5, //0 for every time, 5 for normal
   admin = {
     imgDir: "/img/",
-    debug: true,
+    debug: false,
   };
 let counter = 1;
 
