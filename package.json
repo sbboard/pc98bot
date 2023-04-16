@@ -17,9 +17,6 @@
   },
   "homepage": "https://github.com/sbboard/pc98bot#readme",
   "dependencies": {
-    "axios": "^0.24.0",
-    "puppeteer": "^19.6.3",
-    "python-shell": "^1.0.8",
-    "twit": "^2.2.11"
+    "twitter-api-v2": "^1.14.2"
   }
 }

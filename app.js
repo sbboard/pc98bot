@@ -1,21 +1,14 @@
+const { TwitterApi } = require("twitter-api-v2");
+
 const fs = require("fs"),
-  Twit = require("twit"),
   path = require("path"),
   config = require(path.join(__dirname, "config.js")),
-  T = new Twit(config),
+  client = new TwitterApi(config),
   hour = 4, //4 for normal, 1 for hourly
   admin = {
     imgDir: "/img/",
-    debug: true,
+    debug: false,
   };
-
-//get how many images are left
-async function getCount() {
-  const promise = new Promise((resolve) => {
-    fs.readdir(__dirname + admin.imgDir, (err, files) => resolve(files.length));
-  });
-  return await promise;
-}
 
 function getFolder() {
   return new Promise((resolve) => {
@@ -39,35 +32,25 @@ function getImage(folder) {
   });
 }
 
-function tweet(folder, image) {
-  return new Promise((resolve) => {
-    let image_path = path.join(__dirname, admin.imgDir + folder + "/" + image);
-    const b64content = fs.readFileSync(image_path, { encoding: "base64" });
-    let msg = "";
-    if (folder == "_unknown") {
-      msg = `unknown // PC-98
-If you know the name of this software, please leave a reply!
+async function tweet(folder, image) {
+  let image_path = path.join(__dirname, admin.imgDir + folder + "/" + image);
+  let msg = "";
+  if (folder == "_unknown") {
+    msg = `unknown // PC-98
+If you know the name of this software, please leave a reply.
 あなたがこのソフトウェアの名前を知っているならば、答えを残してください`;
-    } else {
-      const gameName = folder.split("###")[0],
-        company = folder.split("###")[1],
-        company_hash = company.replace(/[!@#$'%^()\-&*\[\]\s,.]/g, "");
-      msg = `${gameName} // ${company} // PC-98 // #pc98 #${company_hash}`;
-    }
-    console.log("Uploading image...");
-    T.post("media/upload", { media_data: b64content }, (err, data) => {
-      if (err) console.log("ERROR:", err);
-      else {
-        console.log("Uploaded Image!");
-        const mid = new Array(data.media_id_string);
-        T.post("statuses/update", { media_ids: mid, status: msg }, (err) => {
-          if (err) console.log("ERROR:", err);
-          else console.log("Posted!");
-          resolve(image_path);
-        });
-      }
-    });
+  } else {
+    const gameName = folder.split("###")[0],
+      company = folder.split("###")[1],
+      company_hash = company.replace(/[!@#$'%^()\-&*\[\]\s,.]/g, "");
+    msg = `${gameName} // ${company} // PC-98 // #pc98 #${company_hash}`;
+  }
+  const mediaId = await client.v1.uploadMedia(image_path);
+  await client.v2.tweet(msg, {
+    media: { media_ids: [mediaId] },
   });
+  console.log("posted", image_path);
+  return new Promise((resolve) => resolve(image_path));
 }
 
 function deleteImg(image_path) {
@@ -94,13 +77,11 @@ function deleteFolder(imgLength, folder) {
 async function runScript() {
   const time = new Date();
   if ((time.getHours() % hour == 0 && time.getMinutes() == 0) || admin.debug) {
-    getCount().then(async function (numOfGames) {
-      const folderName = await getFolder();
-      const imgObj = await getImage(folderName);
-      const filepath = await tweet(folderName, imgObj.imgName);
-      await deleteImg(filepath);
-      await deleteFolder(imgObj.imgLength, folderName);
-    });
+    const folderName = await getFolder();
+    const imgObj = await getImage(folderName);
+    const filepath = await tweet(folderName, imgObj.imgName);
+    await deleteImg(filepath);
+    await deleteFolder(imgObj.imgLength, folderName);
   }
 }
 
