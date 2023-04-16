@@ -3,11 +3,14 @@ const fs = require("fs"),
   path = require("path"),
   config = require(path.join(__dirname, "config.js")),
   T = new Twit(config),
+  archive = require("./archive/tweet.js"),
   hour = 4, //4 for normal, 1 for hourly
+  retweetEvery = 5, //0 for every time, 5 for normal
   admin = {
     imgDir: "/img/",
     debug: true,
   };
+let counter = 1;
 
 //get how many images are left
 async function getCount() {
@@ -91,15 +94,45 @@ function deleteFolder(imgLength, folder) {
   });
 }
 
+function postRT(RTID) {
+  T.post("statuses/retweet/:id", { id: RTID }, (err, response) => {
+    if (response) console.log("retweeted");
+    if (err) {
+      if (err.code == 327) {
+        //untweet
+        T.post("statuses/unretweet/:id", { id: RTID }, (err, response) => {
+          if (response) postRT(RTID);
+          if (err) console.log(err);
+        });
+      } else if (err.code == 144) retweet();
+      else console.log(err);
+    }
+  });
+}
+
+async function retweet() {
+  const archiveLength = archive.length;
+  const rand = Math.floor(Math.random() * archiveLength);
+  if (archive[rand].tweet.entities.hashtags.some((i) => i.text === "pc98")) {
+    postRT(archive[rand].tweet.id);
+  } else retweet();
+}
+
 async function runScript() {
   const time = new Date();
   if ((time.getHours() % hour == 0 && time.getMinutes() == 0) || admin.debug) {
     getCount().then(async function (numOfGames) {
-      const folderName = await getFolder();
-      const imgObj = await getImage(folderName);
-      const filepath = await tweet(folderName, imgObj.imgName);
-      await deleteImg(filepath);
-      await deleteFolder(imgObj.imgLength, folderName);
+      if (numOfGames > 0 && counter < retweetEvery) {
+        const folderName = await getFolder();
+        const imgObj = await getImage(folderName);
+        const filepath = await tweet(folderName, imgObj.imgName);
+        await deleteImg(filepath);
+        await deleteFolder(imgObj.imgLength, folderName);
+        counter++;
+      } else {
+        retweet();
+        counter = 1;
+      }
     });
   }
 }

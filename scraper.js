@@ -1,15 +1,18 @@
 const fs = require("fs"),
-  Twit = require("twit"),
   path = require("path"),
-  config = require(path.join(__dirname, "config.js")),
-  T = new Twit(config),
+  config = require(path.join(__dirname, "scrape_config.js")),
+  puppeteer = require("puppeteer"),
+  //   archive = require("./archive/tweet.js"),
   hour = 4, //4 for normal, 1 for hourly
+  //   retweetEvery = 5, //0 for every time, 5 for normal
   admin = {
     imgDir: "/img/",
     debug: true,
   };
 
-//get how many images are left
+let browser;
+// let counter = 1;
+
 async function getCount() {
   const promise = new Promise((resolve) => {
     fs.readdir(__dirname + admin.imgDir, (err, files) => resolve(files.length));
@@ -55,19 +58,37 @@ If you know the name of this software, please leave a reply!
       msg = `${gameName} // ${company} // PC-98 // #pc98 #${company_hash}`;
     }
     console.log("Uploading image...");
-    T.post("media/upload", { media_data: b64content }, (err, data) => {
-      if (err) console.log("ERROR:", err);
-      else {
-        console.log("Uploaded Image!");
-        const mid = new Array(data.media_id_string);
-        T.post("statuses/update", { media_ids: mid, status: msg }, (err) => {
-          if (err) console.log("ERROR:", err);
-          else console.log("Posted!");
-          resolve(image_path);
-        });
-      }
-    });
+    postTweet(b64content, msg);
   });
+}
+
+async function postTweet(img, msg) {
+  const page = await browser.newPage();
+  await page.goto("https://mobile.twitter.com/");
+  const loginCheck = await page.evaluateHandle(() => {
+    return document.querySelector("[data-testid='login']");
+  });
+
+  console.log(loginCheck);
+
+  if (loginCheck) {
+    await loginCheck.click();
+    await loginCheck.dispose();
+    await page.waitForSelector("[data-testid='google_sign_in_container']");
+    const usernameInput = await page.evaluateHandle(() => {
+      return document
+        .querySelector("[data-testid='google_sign_in_container']")
+        .parentElement.querySelector("input");
+    });
+    await usernameInput.focus();
+    await page.keyboard.type(config.username);
+    // await page.evaluate((config) => {
+    //   document.querySelector("input").value = "PEEN";
+    //   //   Array.from(document.querySelectorAll("[role='button']"))
+    //   //     .filter((v) => v.textContent === "Next")[0]
+    //   //     .click();
+    // }, config);
+  }
 }
 
 function deleteImg(image_path) {
@@ -91,19 +112,45 @@ function deleteFolder(imgLength, folder) {
   });
 }
 
+// async function postRT(RTID) {
+//   const browser = await puppeteer.launch();
+//   await browser.close();
+// }
+
+// async function retweet() {
+//   const archiveLength = archive.length;
+//   const rand = Math.floor(Math.random() * archiveLength);
+//   if (archive[rand].tweet.entities.hashtags.some((i) => i.text === "pc98")) {
+//     postRT(archive[rand].tweet.id);
+//   } else retweet();
+// }
+
 async function runScript() {
   const time = new Date();
+  browser = await puppeteer.launch({
+    headless: false,
+    defaultViewport: null,
+  });
   if ((time.getHours() % hour == 0 && time.getMinutes() == 0) || admin.debug) {
     getCount().then(async function (numOfGames) {
-      const folderName = await getFolder();
-      const imgObj = await getImage(folderName);
-      const filepath = await tweet(folderName, imgObj.imgName);
-      await deleteImg(filepath);
-      await deleteFolder(imgObj.imgLength, folderName);
+      if (
+        numOfGames > 0 //&& counter < retweetEvery
+      ) {
+        const folderName = await getFolder();
+        const imgObj = await getImage(folderName);
+        const filepath = await tweet(folderName, imgObj.imgName);
+        await deleteImg(filepath);
+        await deleteFolder(imgObj.imgLength, folderName);
+        // counter++;
+        //   } else {
+        //     retweet();
+        //     counter = 1;
+      }
     });
   }
 }
 
-let timeInterval = admin.debug ? 10000 : 60000;
-setInterval(runScript, timeInterval);
+let timeInterval = admin.debug ? 5000 : 60000;
+//setInterval(runScript, timeInterval);
+runScript();
 console.log("admin mode:", admin.debug);
