@@ -11,77 +11,124 @@ const fs = require("fs"),
   };
 
 function getFolder() {
-  return new Promise((resolve) => {
-    const folders = fs.readdirSync(__dirname + admin.imgDir).filter((f) => {
-      return fs.statSync(__dirname + admin.imgDir + "/" + f).isDirectory();
-    });
-    resolve(folders[Math.floor(Math.random() * folders.length)]);
+  return new Promise((resolve, reject) => {
+    fs.readdir(
+      __dirname + admin.imgDir,
+      { withFileTypes: true },
+      (err, dirents) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        const folders = dirents
+          .filter((dirent) => dirent.isDirectory())
+          .map((dirent) => dirent.name);
+        if (folders.length === 0) {
+          reject(new Error("No folders found"));
+          return;
+        }
+        const randomFolder =
+          folders[Math.floor(Math.random() * folders.length)];
+        resolve(randomFolder);
+      }
+    );
   });
 }
 
 function getImage(folder) {
-  return new Promise((resolve) => {
-    let images = [];
-    fs.readdirSync(__dirname + admin.imgDir + folder + "/").forEach((file) =>
-      images.push(file)
-    );
-    resolve({
-      imgName: images[Math.floor(Math.random() * images.length)],
-      imgLength: images.length,
+  return new Promise((resolve, reject) => {
+    fs.readdir(__dirname + admin.imgDir + folder, (err, files) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      const { imgName, imgLength } = selectRandomImage(files);
+      resolve({ imgName, imgLength });
     });
   });
 }
 
+function selectRandomImage(files) {
+  if (files.length === 0) {
+    throw new Error("No images found");
+  }
+  const randomIndex = Math.floor(Math.random() * files.length);
+  const imgName = files[randomIndex];
+  const imgLength = files.length;
+  return { imgName, imgLength };
+}
+
 async function tweet(folder, image) {
-  let image_path = path.join(__dirname, admin.imgDir + folder + "/" + image);
-  let msg = "";
-  if (folder == "_unknown") {
-    msg = `unknown // PC-98
+  try {
+    const imagePath = path.join(__dirname, admin.imgDir, folder, image);
+    let msg = "";
+    if (folder == "_unknown") {
+      msg = `unknown // PC-98
 If you know the name of this software, please leave a reply.
 あなたがこのソフトウェアの名前を知っているならば、答えを残してください`;
-  } else {
-    const gameName = folder.split("###")[0],
-      company = folder.split("###")[1],
-      company_hash = company.replace(/[!@#$'%^()\-&*\[\]\s,.]/g, "");
-    msg = `${gameName} // ${company} // PC-98 // #pc98 #${company_hash}`;
+    } else {
+      const [gameName, company] = folder.split("###");
+      const companyHash = company.replace(/[!@#$'%^()\-&*\[\]\s,.]/g, "");
+      msg = `${gameName} // ${company} // PC-98 // #pc98 #${companyHash}`;
+    }
+    const mediaId = await client.v1.uploadMedia(imagePath);
+    await client.v2.tweet(msg, {
+      media: { media_ids: [mediaId] },
+    });
+    return imagePath;
+  } catch (e) {
+    console.log("ERROR: Failed during tweet function");
+    console.log(e);
+    throw e; // or return Promise.reject(e);
   }
-  const mediaId = await client.v1.uploadMedia(image_path);
-  await client.v2.tweet(msg, {
-    media: { media_ids: [mediaId] },
-  });
-  console.log("posted", image_path);
-  return new Promise((resolve) => resolve(image_path));
 }
 
 function deleteImg(image_path) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     fs.unlink(image_path, (err) => {
-      if (err) console.log("ERROR: unable to delete image " + image_path);
-      else console.log("img " + image_path + " was deleted");
-      resolve("resolved");
+      if (err) {
+        reject(err);
+      } else {
+        resolve("resolved");
+      }
     });
   });
 }
 
 function deleteFolder(imgLength, folder) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     if (imgLength - 1 < 1) {
-      fs.rmdir(__dirname + admin.imgDir + folder, () => {
-        console.log(`deleted ${folder} folder`);
-        resolve("resolved");
+      fs.rmdir(__dirname + admin.imgDir + folder, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          console.log(`deleted ${folder} folder`);
+          resolve("resolved");
+        }
       });
-    } else resolve("resolved");
+    } else {
+      resolve("resolved");
+    }
   });
 }
 
 async function runScript() {
-  const time = new Date();
-  if ((time.getHours() % hour == 0 && time.getMinutes() == 0) || admin.debug) {
-    const folderName = await getFolder();
-    const imgObj = await getImage(folderName);
-    const filepath = await tweet(folderName, imgObj.imgName);
-    await deleteImg(filepath);
-    await deleteFolder(imgObj.imgLength, folderName);
+  try {
+    const time = new Date();
+    if (
+      (time.getHours() % hour == 0 && time.getMinutes() == 0) ||
+      admin.debug
+    ) {
+      const folderName = await getFolder();
+      const imgObj = await getImage(folderName);
+      const filepath = await tweet(folderName, imgObj.imgName);
+      await deleteImg(filepath);
+      await deleteFolder(imgObj.imgLength, folderName);
+      console.log(`Posted ${imgObj.imgName} from ${folderName} folder`);
+    }
+  } catch (e) {
+    console.log("ERROR: Failed during runScript function");
+    console.log(e);
   }
 }
 
