@@ -1,30 +1,34 @@
-//this tool was made to create a list of files too big to upload on twitter
+const fs = require("fs");
+const { promisify } = require("util");
+const path = require("path");
 
-let fs = require("fs");
-const dir = "/img/";
+const readdir = promisify(fs.readdir);
+const stat = promisify(fs.stat);
+const appendFile = promisify(fs.appendFile);
 
-fs.readdir(__dirname + dir, (err, files) => {
-  let folderAmt = files.length;
+const dir = path.join(__dirname, "..", "img");
 
-  //scan folders
-  for (let v = 0; v < folderAmt; v++) {
-    //go through each folder
-    fs.readdir(__dirname + dir + files[v], (err, filesTwo) => {
-      for (let x = 0; x < filesTwo.length; x++) {
-        let filesize = fs.statSync(`img/${files[v]}/${filesTwo[x]}`).size;
-        var fileMB = filesize / (1024 * 1024);
+async function main() {
+  const folders = await readdir(dir, { withFileTypes: true });
+
+  for (const folder of folders) {
+    if (folder.isDirectory()) {
+      const files = await readdir(path.join(dir, folder.name));
+
+      for (const file of files) {
+        const filepath = path.join(dir, folder.name, file);
+        const filesize = (await stat(filepath)).size;
+        const fileMB = filesize / (1024 * 1024);
+
         console.log(fileMB);
-        if (fileMB >= 25) {
-          fs.appendFile(
-            "theList.txt",
-            `${files[v]}/${filesTwo[x]}\r\n`,
-            function (err) {
-              if (err) throw err;
-              console.log("Saved!");
-            }
-          );
+
+        if (fileMB >= 5) {
+          await appendFile("theList.txt", `${folder.name}/${file}\r\n`);
+          console.log("Saved!");
         }
       }
-    });
+    }
   }
-});
+}
+
+main().catch((err) => console.error(err));
