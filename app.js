@@ -77,9 +77,7 @@ If you know the name of this software, please leave a reply.
     });
     return imagePath;
   } catch (e) {
-    console.log("ERROR: Failed during tweet function");
-    console.log(e);
-    throw e; // or return Promise.reject(e);
+    throw e;
   }
 }
 
@@ -113,14 +111,15 @@ function deleteFolder(imgLength, folder) {
 }
 
 async function runScript() {
+  let imgObj, folderName;
   try {
     const time = new Date();
     if (
       (time.getHours() % hour == 0 && time.getMinutes() == 0) ||
       admin.debug
     ) {
-      const folderName = await getFolder();
-      const imgObj = await getImage(folderName);
+      folderName = await getFolder();
+      imgObj = await getImage(folderName);
       const filepath = await tweet(folderName, imgObj.imgName);
       await deleteImg(filepath);
       await deleteFolder(imgObj.imgLength, folderName);
@@ -128,7 +127,9 @@ async function runScript() {
     }
   } catch (e) {
     console.log("ERROR: Failed during runScript function");
+    console.log(`${imgObj ? imgObj.imgName : "undefined"} // ${folderName}`);
     console.log(e);
+    return;
   }
 }
 
