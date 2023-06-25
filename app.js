@@ -68,8 +68,12 @@ If you know the name of this software, please leave a reply.
 あなたがこのソフトウェアの名前を知っているならば、答えを残してください`;
     } else {
       const [gameName, company] = folder.split("###");
-      const companyHash = company.replace(/[!@#$'%^()\-&*\[\]\s,.]/g, "");
-      msg = `${gameName} // ${company} // PC-98 // #pc98 #${companyHash}`;
+      if (company) {
+        const companyHash = company.replace(/[!@#$'%^()\-&*\[\]\s,.]/g, "");
+        msg = `${gameName} // ${company} // PC-98 // #pc98 #${companyHash}`;
+      } else {
+        msg = `${gameName} // PC-98 // #pc98`;
+      }
     }
     const mediaId = await client.v1.uploadMedia(imagePath);
     await client.v2.tweet(msg, {
