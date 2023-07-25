@@ -93,9 +93,11 @@ If you know the name of this software, please leave a reply.
     await client.v2.tweet(msg, {
       media: { media_ids: [mediaId] },
     });
+    console.log(`Posted ${imagePath} folder to Twitter`);
     return "resolved";
   } catch (e) {
-    throw e;
+    console.log("ERROR IN TWITTER POSTING");
+    return "resolved";
   }
 }
 
@@ -106,6 +108,7 @@ async function imageToInt8Array(imagePath) {
         reject(err);
         return;
       }
+      console.log(data); // Print the data to see its value
       const int8Array = new Int8Array(data);
       resolve(int8Array);
     });
@@ -145,9 +148,11 @@ If you know the name of this software, please leave a reply.
         $type: "app.bsky.embed.images",
       },
     });
+    console.log(`Posted ${imagePath} to Bluesky`);
     return "resolved";
   } catch (e) {
-    throw e;
+    console.log("ERROR IN BSKY POSTING");
+    return "resolved";
   }
 }
 
@@ -196,16 +201,8 @@ async function runScript() {
         folderName,
         imgObj.imgName
       );
-      if (twitterSafe()) {
-        await tweet(folderName, imagePath);
-        console.log(
-          `Posted ${imgObj.imgName} from ${folderName} folder to Twitter`
-        );
-      }
-      if (bskySafe(imagePath)) {
-        await postBsky(folderName, imagePath);
-        console.log(`Posted ${imgObj.imgName} from ${folderName} to Bluesky`);
-      }
+      if (twitterSafe()) await tweet(folderName, imagePath);
+      if (bskySafe(imagePath)) await postBsky(folderName, imagePath);
       await deleteImg(imagePath);
       await deleteFolder(imgObj.imgLength, folderName);
     }
