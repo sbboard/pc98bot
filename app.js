@@ -1,14 +1,28 @@
 const { TwitterApi } = require("twitter-api-v2");
+const { BskyAgent } = require("@atproto/api");
 
 const fs = require("fs"),
   path = require("path"),
   config = require(path.join(__dirname, "config.js")),
+  bskyConfig = require(path.join(__dirname, "bsky_config.js")),
   client = new TwitterApi(config),
   hour = 4, //4 for normal, 1 for hourly
   admin = {
     imgDir: "/img/",
-    debug: false,
+    debug: true,
+    integrations: {
+      twitter: true,
+      bsky: true,
+    },
   };
+
+function twitterSafe() {
+  return admin.integrations.twitter;
+}
+
+function bskySafe(imagePath) {
+  return imagePath.indexOf(".png") > -1 && admin.integrations.bsky;
+}
 
 function getFolder() {
   return new Promise((resolve, reject) => {
@@ -58,9 +72,54 @@ function selectRandomImage(files) {
   return { imgName, imgLength };
 }
 
-async function tweet(folder, image) {
+async function tweet(folder, imagePath) {
+  let msg = "";
+  if (folder == "_unknown") {
+    msg = `unknown // PC-98
+If you know the name of this software, please leave a reply.
+あなたがこのソフトウェアの名前を知っているならば、答えを残してください`;
+  } else {
+    const [gameName, company] = folder.split("###");
+    if (company) {
+      const companyHash = company.replace(/[!@#$'%^()\-&*\[\]\s,.]/g, "");
+      msg = `${gameName} // ${company} // PC-98 // #pc98 #${companyHash}`;
+    } else {
+      msg = `${gameName} // PC-98 // #pc98`;
+    }
+  }
+
   try {
-    const imagePath = path.join(__dirname, admin.imgDir, folder, image);
+    const mediaId = await client.v1.uploadMedia(imagePath);
+    await client.v2.tweet(msg, {
+      media: { media_ids: [mediaId] },
+    });
+    return "resolved";
+  } catch (e) {
+    throw e;
+  }
+}
+
+async function imageToInt8Array(imagePath) {
+  return new Promise((resolve, reject) => {
+    fs.readFile(imagePath, (err, data) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      const int8Array = new Int8Array(data);
+      resolve(int8Array);
+    });
+  });
+}
+
+async function postBsky(folder, imagePath) {
+  try {
+    const agent = new BskyAgent({ service: "https://bsky.social" });
+    await agent.login(bskyConfig);
+    const int8Array = await imageToInt8Array(imagePath); // Await the imageToInt8Array function
+    const testUpload = await agent.uploadBlob(int8Array, {
+      encoding: "image/png",
+    });
     let msg = "";
     if (folder == "_unknown") {
       msg = `unknown // PC-98
@@ -69,17 +128,24 @@ If you know the name of this software, please leave a reply.
     } else {
       const [gameName, company] = folder.split("###");
       if (company) {
-        const companyHash = company.replace(/[!@#$'%^()\-&*\[\]\s,.]/g, "");
-        msg = `${gameName} // ${company} // PC-98 // #pc98 #${companyHash}`;
+        msg = `${gameName} // ${company} // PC-98`;
       } else {
-        msg = `${gameName} // PC-98 // #pc98`;
+        msg = `${gameName} // PC-98`;
       }
     }
-    const mediaId = await client.v1.uploadMedia(imagePath);
-    await client.v2.tweet(msg, {
-      media: { media_ids: [mediaId] },
+    await agent.post({
+      text: msg,
+      embed: {
+        images: [
+          {
+            image: testUpload.data.blob,
+            alt: msg,
+          },
+        ],
+        $type: "app.bsky.embed.images",
+      },
     });
-    return imagePath;
+    return "resolved";
   } catch (e) {
     throw e;
   }
@@ -124,10 +190,24 @@ async function runScript() {
     ) {
       folderName = await getFolder();
       imgObj = await getImage(folderName);
-      const filepath = await tweet(folderName, imgObj.imgName);
-      await deleteImg(filepath);
+      const imagePath = path.join(
+        __dirname,
+        admin.imgDir,
+        folderName,
+        imgObj.imgName
+      );
+      if (twitterSafe()) {
+        await tweet(folderName, imagePath);
+        console.log(
+          `Posted ${imgObj.imgName} from ${folderName} folder to Twitter`
+        );
+      }
+      if (bskySafe(imagePath)) {
+        await postBsky(folderName, imagePath);
+        console.log(`Posted ${imgObj.imgName} from ${folderName} to Bluesky`);
+      }
+      await deleteImg(imagePath);
       await deleteFolder(imgObj.imgLength, folderName);
-      console.log(`Posted ${imgObj.imgName} from ${folderName} folder`);
     }
   } catch (e) {
     console.log("ERROR: Failed during runScript function");
@@ -137,6 +217,6 @@ async function runScript() {
   }
 }
 
-let timeInterval = admin.debug ? 10000 : 60000;
+let timeInterval = admin.debug ? 10000 : 50000;
 setInterval(runScript, timeInterval);
 console.log("admin mode:", admin.debug);
