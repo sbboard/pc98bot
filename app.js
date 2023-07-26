@@ -93,7 +93,7 @@ If you know the name of this software, please leave a reply.
     await client.v2.tweet(msg, {
       media: { media_ids: [mediaId] },
     });
-    console.log(`Posted ${imagePath} folder to Twitter`);
+    console.log(`Posted ${imagePath} to Twitter`);
     return "resolved";
   } catch (e) {
     console.log("ERROR IN TWITTER POSTING");
@@ -108,7 +108,6 @@ async function imageToInt8Array(imagePath) {
         reject(err);
         return;
       }
-      console.log(data); // Print the data to see its value
       const int8Array = new Int8Array(data);
       resolve(int8Array);
     });
