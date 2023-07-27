@@ -213,6 +213,6 @@ async function runScript() {
   }
 }
 
-let timeInterval = admin.debug ? 10000 : 50000;
+let timeInterval = admin.debug ? 10000 : 60000;
 setInterval(runScript, timeInterval);
 console.log("admin mode:", admin.debug);
