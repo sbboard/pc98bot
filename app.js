@@ -9,7 +9,7 @@ const fs = require("fs"),
   hour = 4, //4 for normal, 1 for hourly
   admin = {
     imgDir: "/img/",
-    debug: false,
+    debug: true,
     integrations: {
       twitter: true,
       bsky: true,
@@ -187,9 +187,12 @@ function deleteFolder(imgLength, folder) {
 async function runScript() {
   let imgObj, folderName;
   try {
-    const time = new Date();
+    const time = Date.now();
+    const lastExecutionTime = runScript.lastExecution || 0;
+    const timeDiff = time - lastExecutionTime;
     if (
-      (time.getHours() % hour == 0 && time.getMinutes() == 0) ||
+      (new Date().getHours() % hour === 0 && new Date().getMinutes() === 0) ||
+      timeDiff >= hour * 60 * 60 * 1000 ||
       admin.debug
     ) {
       folderName = await getFolder();
@@ -204,6 +207,7 @@ async function runScript() {
       if (bskySafe(imagePath)) await postBsky(folderName, imagePath);
       await deleteImg(imagePath);
       await deleteFolder(imgObj.imgLength, folderName);
+      runScript.lastExecution = time;
     }
   } catch (e) {
     console.log("ERROR: Failed during runScript function");
