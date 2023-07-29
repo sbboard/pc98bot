@@ -9,7 +9,7 @@ const fs = require("fs"),
   hour = 4, //4 for normal, 1 for hourly
   admin = {
     imgDir: "/img/",
-    debug: true,
+    debug: false,
     integrations: {
       twitter: true,
       bsky: true,
