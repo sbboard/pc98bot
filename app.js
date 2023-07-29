@@ -21,7 +21,9 @@ function twitterSafe() {
 }
 
 function bskySafe(imagePath) {
-  return imagePath.indexOf(".png") > -1 && admin.integrations.bsky;
+  return (
+    imagePath.toLowerCase().indexOf(".gif") == -1 && admin.integrations.bsky
+  );
 }
 
 function getFolder() {
