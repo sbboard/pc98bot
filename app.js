@@ -193,10 +193,12 @@ async function runScript() {
     const lastExecutionTime = runScript.lastExecution || 0;
     const timeDiff = time - lastExecutionTime;
     if (
-      (new Date().getHours() % hour === 0 && new Date().getMinutes() === 0) ||
-      timeDiff >= hour * 60 * 60 * 1000 ||
-      admin.debug
+      ((new Date().getHours() % hour === 0 && new Date().getMinutes() === 0) ||
+        timeDiff >= hour * 60 * 60 * 1000 ||
+        admin.debug) &&
+      !runScript.posting
     ) {
+      runScript.posting = true;
       folderName = await getFolder();
       imgObj = await getImage(folderName);
       const imagePath = path.join(
@@ -216,6 +218,8 @@ async function runScript() {
     console.log(`${imgObj ? imgObj.imgName : "undefined"} // ${folderName}`);
     console.log(e);
     return;
+  } finally {
+    runScript.posting = false;
   }
 }
 
