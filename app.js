@@ -16,14 +16,16 @@ const fs = require("fs"),
     },
   };
 
+function isGif(imagePath) {
+  return imagePath.toLowerCase().indexOf(".gif") != -1;
+}
+
 function twitterSafe() {
-  return admin.integrations.twitter;
+  return !isGif(imagePath) && admin.integrations.twitter;
 }
 
 function bskySafe(imagePath) {
-  return (
-    imagePath.toLowerCase().indexOf(".gif") == -1 && admin.integrations.bsky
-  );
+  return !isGif(imagePath) && admin.integrations.bsky;
 }
 
 function getFolder() {
@@ -100,11 +102,11 @@ async function tweet(folder, imagePath) {
       media: { media_ids: [mediaId] },
     });
     console.log(`Posted ${imagePath} to Twitter`);
+    return true;
   } catch (e) {
     console.log("ERROR IN TWITTER POSTING");
     console.log(e);
-  } finally {
-    return "resolved";
+    return false;
   }
 }
 
@@ -125,7 +127,7 @@ async function postBsky(folder, imagePath) {
   try {
     const agent = new BskyAgent({ service: "https://bsky.social" });
     await agent.login(bskyConfig);
-    const int8Array = await imageToInt8Array(imagePath); // Await the imageToInt8Array function
+    const int8Array = await imageToInt8Array(imagePath);
     const testUpload = await agent.uploadBlob(int8Array, {
       encoding: "image/png",
     });
@@ -143,11 +145,11 @@ async function postBsky(folder, imagePath) {
       },
     });
     console.log(`Posted ${imagePath} to Bluesky`);
+    return true;
   } catch (e) {
     console.log("ERROR IN BSKY POSTING");
     console.log(e);
-  } finally {
-    return "resolved";
+    return false;
   }
 }
 
@@ -194,16 +196,21 @@ async function runScript() {
         folderName,
         imgObj.imgName
       );
-      if (twitterSafe()) {
-        await tweet(folderName, imagePath);
+
+      const isTweetSuccess = twitterSafe()
+        ? await tweet(folderName, imagePath)
+        : false;
+      const isBskySuccess = bskySafe(imagePath)
+        ? await postBsky(folderName, imagePath)
+        : false;
+
+      if (isTweetSuccess || isBskySuccess) {
         runScript.lastExecution = time;
+        await deleteImg(imagePath);
+        await deleteFolder(imgObj.imgLength, folderName);
+      } else {
+        console.log("ERROR: Failed during tweet or postBsky function");
       }
-      if (bskySafe(imagePath)) {
-        await postBsky(folderName, imagePath);
-        runScript.lastExecution = time;
-      }
-      await deleteImg(imagePath);
-      await deleteFolder(imgObj.imgLength, folderName);
     }
   } catch (e) {
     console.log("ERROR: Failed during runScript function");
