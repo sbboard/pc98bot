@@ -20,7 +20,7 @@ function isGif(imagePath) {
   return imagePath.toLowerCase().indexOf(".gif") != -1;
 }
 
-function twitterSafe() {
+function twitterSafe(imagePath) {
   return !isGif(imagePath) && admin.integrations.twitter;
 }
 
@@ -197,7 +197,7 @@ async function runScript() {
         imgObj.imgName
       );
 
-      const isTweetSuccess = twitterSafe()
+      const isTweetSuccess = twitterSafe(imagePath)
         ? await tweet(folderName, imagePath)
         : false;
       const isBskySuccess = bskySafe(imagePath)
