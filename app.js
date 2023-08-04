@@ -209,7 +209,7 @@ async function runScript() {
         await deleteImg(imagePath);
         await deleteFolder(imgObj.imgLength, folderName);
       } else {
-        console.log("ERROR: Failed during tweet or postBsky function");
+        console.log(`ABORT: ${imagePath} Failed to Post`);
       }
     }
   } catch (e) {
