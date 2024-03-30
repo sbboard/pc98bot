@@ -23,7 +23,7 @@ async function main() {
         console.log(fileMB);
 
         if (fileMB >= 5) {
-          await appendFile("theList.txt", `${folder.name}/${file}\r\n`);
+          await appendFile("tooBigList.txt", `${folder.name}/${file}\r\n`);
           console.log("Saved!");
         }
       }
