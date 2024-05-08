@@ -9,7 +9,9 @@ const fs = require("fs"),
   hour = 4, //4 for normal, 1 for hourly
   admin = {
     imgDir: "/img/",
-    debug: true,
+    debug: false,
+    killscreen:
+      "No more images to post. Please refill queue and reboot server to continue. Thank you for playing.",
     integrations: {
       twitter: true,
       bsky: true,
@@ -37,6 +39,7 @@ async function getFolder() {
   });
 }
 
+// Read folders in img directory
 async function readFolders(): Promise<string[]> {
   return new Promise((resolve, reject) => {
     fs.readdir(
@@ -97,8 +100,13 @@ If you know the name of this software, please leave a reply.
   }
 }
 
-async function tweet(folder, imagePath) {
+async function tweet(folder, imagePath, killscreen = false) {
   try {
+    if (killscreen) {
+      await client.v2.tweet(admin.killscreen);
+      console.log(`Posted killscreen to Twitter`);
+      return true;
+    }
     const msg = await createMessage(folder, false);
     const mediaId = await client.v1.uploadMedia(imagePath);
     await client.v2.tweet(msg, {
@@ -126,10 +134,15 @@ async function imageToInt8Array(imagePath) {
   });
 }
 
-async function postBsky(folder, imagePath) {
+async function postBsky(folder, imagePath, killscreen = false) {
   try {
     const agent = new BskyAgent({ service: "https://bsky.social" });
     await agent.login(bskyConfig);
+    if (killscreen) {
+      await agent.post({ text: admin.killscreen });
+      console.log(`Posted killscreen to Bluesky`);
+      return true;
+    }
     const int8Array = await imageToInt8Array(imagePath);
     const testUpload = await agent.uploadBlob(int8Array, {
       encoding: "image/png",
@@ -195,6 +208,15 @@ async function runScript() {
     ) {
       posting = true;
       folderName = await getFolder();
+
+      if (!folderName) {
+        posting = false;
+        clearInterval(app);
+        await tweet("", "", true);
+        await postBsky("", "", true);
+        return;
+      }
+
       imgObj = await getImage(folderName);
       const imagePath = path.join(
         __dirname,
@@ -228,5 +250,5 @@ async function runScript() {
 }
 
 let timeInterval = admin.debug ? 10000 : 60000;
-setInterval(runScript, timeInterval);
+const app = setInterval(runScript, timeInterval);
 console.log("debug mode:", admin.debug);
