@@ -10,13 +10,15 @@ const fs = require("fs"),
   admin = {
     imgDir: "/img/",
     debug: false,
-    killscreen:
-      "No more images to post. Please refill queue and reboot server to continue. Thank you for playing.",
     integrations: {
       twitter: true,
       bsky: true,
     },
-  };
+  },
+  killImg = "killscreen.png",
+  killCopy = !admin.debug
+    ? "No more images in queue. PC-98 Bot prime directive complete. Thank you for playing. Shutting down."
+    : "Test string 2";
 
 function isGif(imagePath) {
   return imagePath.toLowerCase().indexOf(".gif") != -1;
@@ -83,32 +85,21 @@ function selectRandomImage(files) {
 }
 
 async function createMessage(folder, disableHash = true) {
-  if (folder == "_unknown") {
-    return `unknown // PC-98
-If you know the name of this software, please leave a reply.
-あなたがこのソフトウェアの名前を知っているならば、答えを残してください`;
-  } else {
-    const [gameName, company] = folder.split("###");
-    if (company) {
-      const companyHash = company.replace(/[!@#$'%^()\-&*\[\]\s,.]/g, "");
-      return `${gameName} // ${company} // PC-98${
-        disableHash ? "" : " // #pc98 #" + companyHash
-      }`;
-    } else {
-      return `${gameName} // PC-98${disableHash ? "" : " // #pc98"}`;
-    }
-  }
+  const [gameName, company] = folder.split("###");
+  if (!company) return `${gameName} // PC-98${disableHash ? "" : " // #pc98"}`;
+  const companyHash = company.replace(/[!@#$'%^()\-&*\[\]\s,.]/g, "");
+  return `${gameName} // ${company} // PC-98${
+    disableHash ? "" : " // #pc98 #" + companyHash
+  }`;
 }
 
 async function tweet(folder, imagePath, killscreen = false) {
   try {
-    if (killscreen) {
-      await client.v2.tweet(admin.killscreen);
-      console.log(`Posted killscreen to Twitter`);
-      return true;
-    }
-    const msg = await createMessage(folder, false);
-    const mediaId = await client.v1.uploadMedia(imagePath);
+    const msg = !killscreen
+      ? await createMessage(folder, admin.debug)
+      : killCopy;
+    const img = !killscreen ? imagePath : `${__dirname}/${killImg}`;
+    const mediaId = await client.v1.uploadMedia(img);
     await client.v2.tweet(msg, {
       media: { media_ids: [mediaId] },
     });
@@ -138,16 +129,12 @@ async function postBsky(folder, imagePath, killscreen = false) {
   try {
     const agent = new BskyAgent({ service: "https://bsky.social" });
     await agent.login(bskyConfig);
-    if (killscreen) {
-      await agent.post({ text: admin.killscreen });
-      console.log(`Posted killscreen to Bluesky`);
-      return true;
-    }
-    const int8Array = await imageToInt8Array(imagePath);
+    const img = !killscreen ? imagePath : `${__dirname}/${killImg}`;
+    const int8Array = await imageToInt8Array(img);
     const testUpload = await agent.uploadBlob(int8Array, {
       encoding: "image/png",
     });
-    const msg = await createMessage(folder);
+    const msg = !killscreen ? await createMessage(folder) : killCopy;
     await agent.post({
       text: msg,
       embed: {
@@ -214,6 +201,7 @@ async function runScript() {
         clearInterval(app);
         await tweet("", "", true);
         await postBsky("", "", true);
+        console.log("Killscreen posted. No more images queue. Shutting down.");
         return;
       }
 
