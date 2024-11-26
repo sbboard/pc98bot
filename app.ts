@@ -1,6 +1,7 @@
 const { TwitterApi } = require("twitter-api-v2");
 const { BskyAgent } = require("@atproto/api");
 
+let twitterSkip = true; // skip twitter posting every other
 const fs = require("fs"),
   path = require("path"),
   config = require(path.join(__dirname, "config.js")),
@@ -213,14 +214,16 @@ async function runScript() {
         imgObj.imgName
       );
 
-      const isTweetSuccess = twitterSafe(imagePath)
-        ? await tweet(folderName, imagePath)
-        : false;
+      const isTweetSuccess =
+        twitterSafe(imagePath) && !twitterSkip
+          ? await tweet(folderName, imagePath)
+          : false;
       const isBskySuccess = bskySafe(imagePath)
         ? await postBsky(folderName, imagePath)
         : false;
 
       if (isTweetSuccess || isBskySuccess) {
+        twitterSkip = !twitterSkip;
         lastExecution = time;
         await deleteImg(imagePath);
         await deleteFolder(imgObj.imgLength, folderName);
