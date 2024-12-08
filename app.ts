@@ -157,12 +157,16 @@ async function postBsky(folder, imagePath, killscreen = false) {
   }
 }
 
-async function deleteImg(image_path) {
+async function moveImg(image_path, folderName) {
   try {
-    await fs.promises.unlink(image_path);
-    console.log(`Deleted image: ${image_path}`);
+    const dir = path.join(__dirname, "posted", folderName);
+    const destinationPath = path.join(dir, path.basename(image_path));
+
+    await fs.promises.mkdir(dir, { recursive: true });
+    await fs.promises.rename(image_path, destinationPath);
+    console.log(`Moved image to: ${destinationPath}`);
   } catch (err) {
-    console.log("ERROR IN IMAGE DELETION");
+    console.log("ERROR IN IMAGE MOVEMENT");
     console.log(err);
   }
 }
@@ -225,7 +229,7 @@ async function runScript() {
       if (isTweetSuccess || isBskySuccess) {
         twitterSkip = !twitterSkip;
         lastExecution = time;
-        await deleteImg(imagePath);
+        await moveImg(imagePath, folderName);
         await deleteFolder(imgObj.imgLength, folderName);
       } else {
         console.log(`ABORT: ${imagePath} Failed to Post`);
