@@ -5,7 +5,8 @@
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "tsc": "tsc app.ts --watch --removeComments"
+    "tsc": "tsc app.ts --watch --removeComments",
+    "tsc-atf": "tsc tools/archiveToFolder.ts --watch --removeComments"
   },
   "repository": {
     "type": "git",
