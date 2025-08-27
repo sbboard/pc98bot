@@ -1,5 +1,6 @@
 const { TwitterApi } = require("twitter-api-v2");
 const { BskyAgent } = require("@atproto/api");
+const sharp = require("sharp");
 
 let twitterSkip = true; // skip twitter posting every other
 const fs = require("fs"),
@@ -113,27 +114,22 @@ async function tweet(folder, imagePath, killscreen = false) {
   }
 }
 
-async function imageToInt8Array(imagePath) {
-  return new Promise((resolve, reject) => {
-    fs.readFile(imagePath, (err, data) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      const int8Array = new Int8Array(data);
-      resolve(int8Array);
-    });
-  });
-}
-
 async function postBsky(folder, imagePath, killscreen = false) {
   try {
     const agent = new BskyAgent({ service: "https://bsky.social" });
     await agent.login(bskyConfig);
     const img = !killscreen ? imagePath : `${__dirname}/${killImg}`;
-    const int8Array = await imageToInt8Array(img);
+    const resizedBuffer = await sharp(img)
+      .resize({
+        width: Math.floor((await sharp(img).metadata()).width * 2),
+        height: Math.floor((await sharp(img).metadata()).height * 2),
+        kernel: sharp.kernel.nearest,
+      })
+      .jpeg({ quality: 100 })
+      .toBuffer();
+    const int8Array = new Int8Array(resizedBuffer);
     const testUpload = await agent.uploadBlob(int8Array, {
-      encoding: "image/png",
+      encoding: "image/jpeg",
     });
     const msg = !killscreen ? await createMessage(folder) : killCopy;
     await agent.post({
