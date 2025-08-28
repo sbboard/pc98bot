@@ -18,9 +18,8 @@ const fs = require("fs"),
     },
   },
   killImg = "killscreen.png",
-  killCopy = !admin.debug
-    ? "No more images in queue. PC-98 Bot prime directive complete. Thank you for playing. Shutting down."
-    : "Test string 2";
+  killCopy =
+    "No more images in queue. PC-98 Bot prime directive complete. Thank you for playing. Shutting down.";
 
 function isGif(imagePath) {
   return imagePath.toLowerCase().indexOf(".gif") != -1;
@@ -114,21 +113,22 @@ async function tweet(folder, imagePath, killscreen = false) {
   }
 }
 
-async function postBsky(folder, imagePath, killscreen = false) {
+async function postBsky(folder, imagePath, killscreen = false, quality = 100) {
   try {
     const agent = new BskyAgent({ service: "https://bsky.social" });
     await agent.login(bskyConfig);
     const img = !killscreen ? imagePath : `${__dirname}/${killImg}`;
+    const meta = await sharp(img).metadata();
     const resizedBuffer = await sharp(img)
       .resize({
-        width: Math.floor((await sharp(img).metadata()).width * 2),
-        height: Math.floor((await sharp(img).metadata()).height * 2),
+        width: Math.floor(meta.width * 2),
+        height: Math.floor(meta.height * 2),
         kernel: sharp.kernel.nearest,
       })
-      .jpeg({ quality: 100 })
+      .jpeg({ quality })
       .toBuffer();
-    const int8Array = new Int8Array(resizedBuffer);
-    const testUpload = await agent.uploadBlob(int8Array, {
+    const uint8Array = new Uint8Array(resizedBuffer);
+    const testUpload = await agent.uploadBlob(uint8Array, {
       encoding: "image/jpeg",
     });
     const msg = !killscreen ? await createMessage(folder) : killCopy;
@@ -147,8 +147,11 @@ async function postBsky(folder, imagePath, killscreen = false) {
     console.log(`Posted ${imagePath} to Bluesky`);
     return true;
   } catch (e) {
-    console.log("ERROR IN BSKY POSTING");
-    console.log(e);
+    if (e.error === "BlobTooLarge") {
+      console.log("IMAGE TOO LARGE FOR BSKY. DOWNSCALING TO:", quality * 0.9);
+      return postBsky(folder, imagePath, killscreen, quality * 0.9);
+    }
+    console.log("ERROR IN BSKY POSTING", e);
     return false;
   }
 }
